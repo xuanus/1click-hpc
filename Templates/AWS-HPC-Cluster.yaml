@@ -14,6 +14,7 @@ Metadata:
           - PublicSubnetBId
           - PrivateSubnetAId
           - FSx
+          - AD
     ParameterLabels: 
       AdminPassword: 
         default: 'Password:'
@@ -27,6 +28,8 @@ Metadata:
         default: 'Private Subnet:'
       FSx: 
         default: 'FSx:'
+      AD: 
+        default: 'Active Directory:'
         
 Parameters:
     AdminPassword:
@@ -38,69 +41,75 @@ Parameters:
       NoEcho: 'true'
 
     VpcId:
-      Description: 'Please, enter your VPC ID, or just leave "AUTO" if you have no idea of what a VPC ID is.'
+      Description: 'Please, enter your VPC ID, or just leave "AUTO" if you want to re-use an existing one.'
       Type: String
       AllowedPattern: ^(AUTO|vpc-[0-9a-z]+)$
       Default: AUTO
 
     PublicSubnetAId: 
-      Description: 'Please, enter the ID of the Public Subnet you wish to use, or just leave "AUTO" if you have no idea of what a Subnet is.'
+      Description: 'Please, enter the ID of the Public Subnet you wish to use, or just leave "AUTO" if you want to re-use an existing one.'
       Type: String
       AllowedPattern: ^(AUTO|subnet-[0-9a-z]+)$
       Default : AUTO
 
     PublicSubnetBId: 
-      Description: 'Please, enter another ID of the Public Subnet you wish to use, or just leave "AUTO" if you have no idea of what a Subnet is.'
+      Description: 'Please, enter another ID of the Public Subnet you wish to use, or just leave "AUTO" if you want to re-use an existing one.'
       Type: String
       AllowedPattern: ^(AUTO|subnet-[0-9a-z]+)$
       Default : AUTO
     
     PrivateSubnetAId:
-      Description: 'Please, enter the ID of the Private Subnet you wish to use, or put NONE if you want to use only Public Subnets, or just leave "AUTO" if you have no idea of what a Subnet is.'
+      Description: 'Please, enter the ID of the Private Subnet you wish to use, or put NONE if you want to use only Public Subnets, or just leave "AUTO" if you want to re-use an existing one.'
       Type: String
       AllowedPattern: ^(AUTO|NONE|subnet-[0-9a-z]+)$
       Default : AUTO
       
     FSx: 
-      Description: 'Please, enter your FSx ID, or just leave "AUTO" if you have no idea of what FSx is.'
+      Description: 'Please, enter your FSx ID, or just leave "AUTO" if you want to re-use an existing one.'
       Type: String
       AllowedPattern: ^(AUTO|fs-[0-9a-z]+)$
+      Default : AUTO
+
+    AD:
+      Description: 'Please, enter your Active Directory ID, or just leave "AUTO" if you want to create a new one.'
+      Type: String
+      AllowedPattern: ^(AUTO|d-[0-9a-z]+)$
       Default : AUTO
 
 Mappings: 
   RegionMap: 
     us-east-1:
-      ZoneId1: use1-az1
+      ZoneId1: use1-az6
       ZoneId2: use1-az4
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     us-east-2:
       ZoneId1: use2-az2
       ZoneId2: use2-az3
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     us-west-1:
       ZoneId1: usw1-az1
       ZoneId2: usw1-az3
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     us-west-2:
       ZoneId1: usw2-az1
       ZoneId2: usw2-az2
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     eu-central-1:
       ZoneId1: euc1-az3
       ZoneId2: euc1-az2
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     eu-west-1:
       ZoneId1: euw1-az1
       ZoneId2: euw1-az2
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     eu-north-1:
       ZoneId1: eun1-az2
       ZoneId2: eun1-az1
-      DbInstanceType: db.t3.micro
+      DbInstanceType: db.t4g.micro
     ca-central-1:
       ZoneId1: cac1-az2
       ZoneId2: cac1-az1
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     eu-south-1:
       ZoneId1: eus1-az2
       ZoneId2: eus1-az1
@@ -108,24 +117,25 @@ Mappings:
     ap-east-1:
       ZoneId1: ape1-az3
       ZoneId2: ape1-az2
-      DbInstanceType: db.t3.micro
+      DbInstanceType: db.t4g.micro
     ap-northeast-1:
       ZoneId1: apne1-az4
       ZoneId2: apne1-az1
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     ap-northeast-2:
       ZoneId1: apne2-az1
       ZoneId2: apne2-az3
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
     ap-south-1:
       ZoneId1: aps1-az2
       ZoneId2: aps1-az3
-      DbInstanceType: db.t2.micro
+      DbInstanceType: db.t4g.micro
 
 Conditions:
   CreateVpc: !Equals [!Ref VpcId, AUTO]
   CreatePrivateSubnet: !And [!Condition CreateVpc, !Equals [!Ref PrivateSubnetAId, AUTO]]
-  
+  CreateAD: !Equals [!Ref AD, AUTO]
+
 Resources:
 
   Cloud9Role:
@@ -365,6 +375,14 @@ Resources:
         FromPort: 80
         ToPort: 80
         SourceSecurityGroupId: !Ref ALBSecurityGroup
+      - IpProtocol: tcp
+        FromPort: 389
+        ToPort: 389
+        SourceSecurityGroupId: !Ref ALBSecurityGroup
+      - IpProtocol: udp
+        FromPort: 389
+        ToPort: 389
+        SourceSecurityGroupId: !Ref ALBSecurityGroup
 
   SlurmDBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -384,11 +402,11 @@ Resources:
       DBName: 'SlurmDB'
       DBInstanceClass: !FindInMap [RegionMap, !Ref "AWS::Region", DbInstanceType]
       MultiAZ: false
-      AllocatedStorage: '50'
+      AllocatedStorage: '20'
       StorageType: gp2
-      MaxAllocatedStorage: 5000
+      MaxAllocatedStorage: 2000
       Engine: MySQL
-      EngineVersion: 8.0.23
+      EngineVersion: 8.0.28
       MasterUsername: 'admin'
       MasterUserPassword: !Ref 'AdminPassword'
       DBSubnetGroupName: !Ref 'SlurmDBSubnetGroup'
@@ -454,6 +472,9 @@ Resources:
             - !Sub echo "export S3_BUCKET=${Cloud9OutputBucket}" >> cluster_env
             - !Sub echo "export FSX_ID=${FSx}" >> cluster_env
             - !Sub
+              - echo "export AD_ID=${ADId}" >> cluster_env
+              - ADId: !If [CreateAD, !Ref ActiveDirectory, !Ref AD]
+            - !Sub
               - echo "export PUBLIC_SUBNET_ID=${FinalPublicSubnetAId}" >> cluster_env
               - FinalPublicSubnetAId: !If [CreateVpc, !Ref PublicSubnetA, !Ref PublicSubnetAId]
             - !Sub
@@ -468,6 +489,9 @@ Resources:
             - !Sub 
               - echo "export ALB_PUBLIC_DNS_NAME='${ALB}'" >> cluster_env
               - ALB: !GetAtt ApplicationLoadBalancer.DNSName
+            - !Sub 
+              - echo "export NLB_PUBLIC_DNS_NAME='${NLB}'" >> cluster_env
+              - NLB: !GetAtt NetworkLoadBalancer.DNSName
             - !Sub
               - echo "export KEY_PAIR=\"${AWS::StackName}-${RANDOM}\"" >> cluster_env
               - RANDOM: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId' ]]]]
@@ -481,6 +505,7 @@ Resources:
     DependsOn:
     - LambdaExecutionRole
     - ApplicationLoadBalancer
+    - NetworkLoadBalancer
     - LogGroupCloud9BootstrapInstanceLambdaFunction
     Properties:
       ServiceToken:
@@ -818,6 +843,54 @@ Resources:
         - !If [CreateVpc, !Ref PublicSubnetB, !Ref PublicSubnetBId]
       SecurityGroups:
         - !Ref ALBSecurityGroup
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: 180
+
+  NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internal
+      Subnets: 
+        - !If [CreateVpc, !Ref PublicSubnetA, !Ref PublicSubnetAId]
+        - !If [CreateVpc, !Ref PublicSubnetB, !Ref PublicSubnetBId]
+      Type: network
+
+  LdapTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${AWS::StackName}-Ldap'
+      Port: 389
+      Protocol: TCP
+      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+      HealthCheckEnabled: True
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPort: 389
+      HealthCheckProtocol: TCP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 3
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 60
+      Targets:
+        - Id: !Select [0, !GetAtt ActiveDirectory.DnsIpAddresses]
+          Port: 389
+        - Id: !Select [1, !GetAtt ActiveDirectory.DnsIpAddresses]
+          Port: 389
+      TargetType: ip
+
+  LdapListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref LdapTargetGroup
+      LoadBalancerArn: !Ref NetworkLoadBalancer
+      Port: 636
+      Protocol: TLS
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      Certificates:
+        - CertificateArn: !GetAtt LBInit.IamCertificateArn
 
   HTTPSListener:
     Type: "AWS::ElasticLoadBalancingV2::Listener"
@@ -992,6 +1065,20 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-GetAZLambdaFunction
+
+  ActiveDirectory:
+    Type: AWS::DirectoryService::MicrosoftAD
+    Condition: CreateAD
+    Properties: 
+      Edition: Standard
+      Name: corp.pcluster.com
+      Password: !Ref AdminPassword
+      ShortName: corp
+      VpcSettings: 
+        SubnetIds: 
+          - !If [CreateVpc, !Ref PublicSubnetA, !Ref PublicSubnetAId]
+          - !If [CreateVpc, !Ref PublicSubnetB, !Ref PublicSubnetBId]
+        VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
 
 Outputs:
 
