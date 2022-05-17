@@ -32,7 +32,7 @@ HeadNode:
   Networking:
     AdditionalSecurityGroups:
       - ${ADDITIONAL_SG}
-    ElasticIp: true
+    ElasticIp: false
     SubnetId: ${SUBNET_ID}
   Ssh:
     KeyName: ${KEY_PAIR}
@@ -118,11 +118,11 @@ Scheduling:
     - Name: compute-od-2
       CapacityType: ONDEMAND
       ComputeResources:
-        - Name: c5n-18xlarge
+        - Name: t2-micro
           DisableSimultaneousMultithreading: true
           Efa:
             Enabled: true
-          InstanceType: c5n.18xlarge
+          InstanceType: t2.micro
           MaxCount: 300
           MinCount: 0
         - Name: m5n-24xlarge
@@ -132,11 +132,11 @@ Scheduling:
           InstanceType: m5n.24xlarge
           MaxCount: 300
           MinCount: 0
-        - Name: r5n-24xlarge
+        - Name: t3-micro
           DisableSimultaneousMultithreading: true
           Efa:
             Enabled: true
-          InstanceType: r5n.24xlarge
+          InstanceType: t3.micro
           MaxCount: 300
           MinCount: 0
         - Name: x2iedn-32xlarge
@@ -358,11 +358,11 @@ Scheduling:
     - Name: compute-spot-2
       CapacityType: SPOT
       ComputeResources:
-        - Name: c5n-18xlarge
+        - Name: t2-micro
           DisableSimultaneousMultithreading: true
           Efa:
             Enabled: true
-          InstanceType: c5n.18xlarge
+          InstanceType: t2.micro
           MaxCount: 300
           MinCount: 0
         - Name: c5-24xlarge
@@ -475,9 +475,9 @@ Scheduling:
             Enabled: true
           MaxCount: 200
           MinCount: 0
-        - Name: m6i-2xlarge
+        - Name: t2-micro
           DisableSimultaneousMultithreading: true
-          InstanceType: m6i.2xlarge
+          InstanceType: t2.micro
           MaxCount: 200
           MinCount: 0
         - Name: m6i-8xlarge

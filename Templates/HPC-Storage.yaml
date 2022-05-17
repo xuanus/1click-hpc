@@ -9,7 +9,7 @@ Parameters:
 Resources:
 
   FSx:
-    DeletionPolicy: Retain
+    DeletionPolicy: Delete # Retain
     Type: AWS::FSx::FileSystem
     Properties:
       FileSystemType: LUSTRE
